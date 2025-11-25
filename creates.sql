@@ -2,10 +2,10 @@
 
 CREATE TABLE "warehouse" (
 	"warehouseID"	INTEGER,
-	"name"	TEXT,
+	"name"	TEXT DEFAULT "Default name",
 	"width"	INTEGER NOT NULL,
 	"height"	INTEGER NOT NULL,
-	PRIMARY KEY("warehouseID")
+	PRIMARY KEY("warehouseID" AUTOINCREMENT)
 )
 
 CREATE TABLE "spaces" (
