@@ -1,0 +1,3 @@
+*.code-workspace
+__pycache__/func.cpython-313.pyc
+warehouse.db
