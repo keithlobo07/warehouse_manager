@@ -37,7 +37,7 @@ def save_grid_as_csv(shelves):
             writer.writerow([x,y])
 
 
-#Warehoue Setup
+#Warehouse Setup
 
 
 def generate_warehouse():
@@ -55,25 +55,23 @@ def generate_warehouse():
     #set rows (ailes) 
     for a in range(h):
          if a == 0 or a == 6 or a == 12:
-        #if at row 0 change all columns in row 0 back to 0/false
+            #if at row 0 change all columns in row 0 back to 0/false
             for b in range(w):
                 grid[a][b] = 0
 
     return grid
 
-#Only run if this file is executed directly
+# Run only when executed directly
 if __name__ == "__main__":
-    #generates warehouse grid
     grid = generate_warehouse()
+    
+    # Print the generated grid
+    print_grid(grid)
+    print("\n")
 
+    # Save shelves
+    s = save_grid_as_array(grid)
+    print(s)  # Remove this after testing
 
-#prints full grid
-print_grid(grid)
-print("\n")
-
-#saves shelves
-s = save_grid_as_array(grid)
-print(s) #remove this after testing 
-
-save_grid_as_csv(s)
-print("shelves.csv file created successfully.") 
+    save_grid_as_csv(s)
+    print("shelves.csv file created successfully.")
