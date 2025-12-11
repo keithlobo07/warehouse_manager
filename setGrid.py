@@ -1,7 +1,10 @@
-#simple grid implementation for dillon to start AI
+#setGrid.py 
+#Simple warehouse grid generator for AI pathfinding (A*, ML)
+#creates ailes and shelves and export shelf coordinates into shelves.csv
+
 import csv
 
-#create a 2D grid (0 = empty, 1 = obstacle)
+#create a empty 2D grid (0 = empty, 1 = obstacle)
 def create_grid(width, height):
     return [[0 for _ in range(width)] for _ in range(height)]
 
@@ -9,12 +12,13 @@ def create_grid(width, height):
 def add_obstacle(grid, x, y):
     grid[y][x]= 1 
 
+
 #display grid as 0 and 1s
 def print_grid(grid):
     for row in grid:
         print(" ".join(str(cell) for cell in row))
 
-#save coords as array
+#Save coordinates of all shelves into an array
 def save_grid_as_array(grid):
     shelves = []
 
@@ -24,36 +28,52 @@ def save_grid_as_array(grid):
                 shelves.append([c,d])
     return shelves
 
-#save array as csv
+#Save shelves array as CSV file 
 def save_grid_as_csv(shelves):
     with open("shelves.csv", "w", newline="") as file:
         writer = csv.writer(file)
-
+        
         for x, y in shelves:
             writer.writerow([x,y])
 
-w = 63
-h = 13
-grid = create_grid(w, h)
 
-#goes through each row
-for j in range(h):
-    #goes through each column
-    for i in range(w):
-        if i % 2 == 1:
-            add_obstacle(grid, i, j)
+#Warehoue Setup
 
-#set rows 0, 6 and 12 back to 0
-for a in range(h):
-    if a == 0 or a == 6 or a == 12:
+
+def generate_warehouse():
+    w = 63
+    h = 13
+    grid = create_grid(w, h)
+
+    # Fill every odd column with shelves
+    for j in range(h):
+        for i in range(w):
+            if i % 2 == 1:
+                add_obstacle(grid, i, j)
+
+
+    #set rows (ailes) 
+    for a in range(h):
+         if a == 0 or a == 6 or a == 12:
         #if at row 0 change all columns in row 0 back to 0/false
-        for b in range(w):
-            grid[a][b] = 0
+            for b in range(w):
+                grid[a][b] = 0
 
+    return grid
+
+#Only run if this file is executed directly
+if __name__ == "__main__":
+    #generates warehouse grid
+    grid = generate_warehouse()
+
+
+#prints full grid
 print_grid(grid)
 print("\n")
 
+#saves shelves
 s = save_grid_as_array(grid)
-print(s)
+print(s) #remove this after testing 
 
 save_grid_as_csv(s)
+print("shelves.csv file created successfully.") 
