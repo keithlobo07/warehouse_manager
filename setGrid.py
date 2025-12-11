@@ -19,7 +19,7 @@ def print_grid(grid):
         print(" ".join(str(cell) for cell in row))
 
 #Save coordinates of all shelves into an array
-def save_grid_as_array(grid):
+def save_shelves_as_array(grid):
     shelves = []
 
     for d in range(len(grid)):
@@ -29,11 +29,29 @@ def save_grid_as_array(grid):
     return shelves
 
 #Save shelves array as CSV file 
-def save_grid_as_csv(shelves):
+def save_shelves_as_csv(shelves):
     with open("shelves.csv", "w", newline="") as file:
         writer = csv.writer(file)
         
         for x, y in shelves:
+            writer.writerow([x,y])
+
+#Save coordinates of all aisles into an array
+def save_aisles_as_array(grid):
+    aisles = []
+
+    for d in range(len(grid)):
+        for c in range(len(grid[0])):
+            if grid[d][c] == 0:
+                aisles.append([c,d])
+    return aisles
+
+#Save aisles array as CSV file 
+def save_aisles_as_csv(aisles):
+    with open("aisles.csv","w", newline="") as file:
+        writer = csv.writer(file)
+
+        for x,y in aisles:
             writer.writerow([x,y])
 
 #check if cell is free
@@ -52,9 +70,7 @@ def get_target_position(target_pos):
     return target_pos
 
 #Warehouse Setup
-
-
-def generate_warehouse(w=63, h=13):
+def generate_warehouse(w=63, h=13, a1=0, a2=6,a3=12):
     grid = create_grid(w, h)
 
     # Fill every odd column with shelves
@@ -65,7 +81,7 @@ def generate_warehouse(w=63, h=13):
 
     # Set aisles
     for a in range(h):
-        if a in (0, 6, 12):
+        if a in (a1, a2, a3):
             for b in range(w):
                 grid[a][b] = 0
 
@@ -80,8 +96,15 @@ if __name__ == "__main__":
     print("\n")
 
     # Save shelves
-    s = save_grid_as_array(grid)
+    s = save_shelves_as_array(grid)
     print(s)  # Remove this after testing
 
-    save_grid_as_csv(s)
+    save_shelves_as_csv(s)
     print("shelves.csv file created successfully.")
+
+    # Save aisles
+    a = save_aisles_as_array(grid)
+    print(a)  # Remove this after testing
+
+    save_aisles_as_csv(a)
+    print("aisles.csv file created successfully.")
