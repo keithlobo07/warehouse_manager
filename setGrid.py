@@ -1,6 +1,6 @@
 #setGrid.py 
 #Simple warehouse grid generator for AI pathfinding (A*, ML)
-#creates ailes and shelves and export shelf coordinates into shelves.csv
+#creates aisles and shelves and export shelf coordinates into shelves.csv
 
 import csv
 
