@@ -40,9 +40,7 @@ def save_grid_as_csv(shelves):
 #Warehouse Setup
 
 
-def generate_warehouse():
-    w = 63
-    h = 13
+def generate_warehouse(w=63, h=13):
     grid = create_grid(w, h)
 
     # Fill every odd column with shelves
@@ -51,11 +49,9 @@ def generate_warehouse():
             if i % 2 == 1:
                 add_obstacle(grid, i, j)
 
-
-    #set rows (ailes) 
+    # Set aisles
     for a in range(h):
-         if a == 0 or a == 6 or a == 12:
-            #if at row 0 change all columns in row 0 back to 0/false
+        if a in (0, 6, 12):
             for b in range(w):
                 grid[a][b] = 0
 
