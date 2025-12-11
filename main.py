@@ -1,6 +1,4 @@
 import sqlite3
 from db_func import *
-
-db_connect()
-create_tables()
-view_tables()
+from setGrid2 import generate_warehouse, get_warehouse_grid
+from search import a_star_search
