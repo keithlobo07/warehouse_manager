@@ -3,7 +3,6 @@ from tabulate import tabulate
 
 
 '''---Database Connection---'''
-
 def db_connect():
     """
     Connect to the SQLite database (or create it if it doesn't exist).
@@ -17,6 +16,14 @@ def db_connect():
     except sqlite3.Error as e:
         print(f"An error occurred while connecting to the database: {e}")
         
+def db_close():
+    """
+    Close the database connection.
+    """
+    try:
+        conn.close()
+    except sqlite3.Error as e:
+        print(f"An error occurred while closing the database connection: {e}")
 
 '''---Delete and Recreate Tables---'''
 def reset_tables():
@@ -27,6 +34,8 @@ def reset_tables():
     cursor.execute('DROP TABLE IF EXISTS stock;')
     cursor.execute('DROP TABLE IF EXISTS products;')
     cursor.execute('DROP TABLE IF EXISTS suppliers;')
+    cursor.execute('DROP TABLE IF EXISTS spaces;')
+    cursor.execute('DROP TABLE IF EXISTS warehouse;')
     conn.commit()
     create_tables()
 
@@ -34,25 +43,35 @@ def reset_tables():
 def create_tables():
     """
     Create the necessary tables in the database if they do not already exist.
-    1. suppliers\n
+    1. warehouse\n
+    warehouseID - Unique identifier for the warehouse (Primary Key)\n
+    name - Name of the warehouse (Default: 'Default name')\n
+    width - Width of the warehouse in grid units (Not Null)\n
+    height - Height of the warehouse in grid units (Not Null)\n
+    2. spaces\n
+    warehouseID - Identifier for the warehouse (Foreign Key referencing warehouse table)\n
+    xPos - X coordinate of the space in the warehouse grid (Not Null)\n
+    yPos - Y coordinate of the space in the warehouse grid (Not Null)\n
+    type - Type of space ('path' or 'shelf') (Not Null)\n
+    3. suppliers\n
     supplierID - 3 digit unique supplier identifier (Primary Key)\n
     supplierName - Name of the supplier (Not Null)\n
     contactName - Name of the contact person at the supplier\n
     email - Email address of the contact person\n
-    2. products\n
+    4. products\n
     productID - 6 digit unique product identifier (Primary Key) Format: XXXYYY (supplierID + unique product code)\n
     productName - Name of the product (Not Null, Unique)\n
     ean - 13 digit European Article Number (Not Null, Unique)\n
     price - Price of the product (Not Null)\n
     supplierID - 3 digit unique supplier identifier (Foreign Key referencing suppliers table)\n
-    3. stock\n
+    5. stock\n
     itemID - 10 digit unique stock item identifier (Primary Key) Format: XXXXXXZZZZ (productID + location)\n
     productID - 6 digit unique product identifier (Foreign Key referencing products table)\n
     location - Cartesian location code in the warehouse (Not Null, Unique) Format: xxyy where xx is the row and yy is the column\n
     quantity - Quantity of the product at the location (Not Null)\n
     expiry - Expiry date of the product (if applicable)\n
     warehouseID - Identifier for the warehouse (Foreign Key referencing warehouse table)\n
-    4. transactions\n
+    6. transactions\n
     transactionID - 10 digit unique transaction identifier (Primary Key)\n
     productID - 6 digit unique product identifier (Foreign Key referencing products table)\n
     transactionDate - Date of the transaction (Not Null)\n
@@ -60,6 +79,27 @@ def create_tables():
     transactionType - Type of transaction ('IN' or 'OUT') (Not Null, Check constraint)\n
     """
     
+    cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS warehouse(
+                    warehouseID INTEGER,
+                    name TEXT DEFAULT 'Default name',
+                    width INTEGER NOT NULL,
+                    height INTEGER NOT NULL,
+                    PRIMARY KEY(warehouseID AUTOINCREMENT)
+                    );
+                   '''
+                   )
+    cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS spaces(
+                    warehouseID INTEGER,
+                    xPos INTEGER,
+                    yPos INTEGER,
+                    type TEXT NOT NULL CHECK (type IN ('path', 'shelf')),
+                    PRIMARY KEY(warehouseID, xPos, yPos),
+                    FOREIGN KEY(warehouseID) REFERENCES warehouse(warehouseID)
+                    );
+                   '''
+                   )
     cursor.execute('''
                     CREATE TABLE IF NOT EXISTS suppliers(
                     supplierID INTEGER(3) UNIQUE PRIMARY KEY,
@@ -108,6 +148,48 @@ def create_tables():
     conn.commit()
   
 '''---Initialise Tables---'''
+def load_grid_from_txt_to_db(filePath, warehouseName): #This function takes a filepath to a warehouse "layout" and inserts a new warehouse into the database.
+    warehouseFile = open(filePath) #An example of a warehouse layout can be seen in layout.txt, P = path, S = shelf
+    xPosition = 0
+    yPosition = 0
+    height = 0 #Variable to track height of warehouse (Incremented as we read file)
+    width = 0 #Variable to track width of warehouse (Incremented as we read file)
+    widthCounted = False
+
+    for line in warehouseFile: #For each line in the warehouseFile, increment height by 1
+        height += 1
+    if (not widthCounted):
+        sLine = line.strip()
+        for char in sLine: #Count characters on a line, increment width
+            width += 1
+    widthCounted = True
+
+    cursor.execute("INSERT into warehouse(warehouseID, name, width, height) values (?,?, ?, ?)", (6, warehouseName, width, height)) #After the size of our warehouse is found we create a new warehouse
+    conn.commit()
+
+    newWarehouseID = cursor.lastrowid #Gets the ID of the newly created warehouse
+
+    warehouseFile.seek(0)
+    for line in warehouseFile: #This block loops over the txt file and adds each space to the spaces table.
+        goodLine = line.strip()
+        for char in goodLine:
+            goodChar = char.strip()
+            if (yPosition == height):
+                break
+            if (xPosition == width):
+                xPosition = 0
+                yPosition += 1
+            
+            if (goodChar == "P"):
+                cursor.execute("INSERT INTO spaces(warehouseID, xPos, yPos, type) values (?, ?, ?, ?)",(newWarehouseID, xPosition, yPosition, 'path'))
+                conn.commit()
+            elif (goodChar == "S"):
+                cursor.execute("INSERT INTO spaces(warehouseID, xPos, yPos, type) values (?, ?, ?, ?)",(newWarehouseID, xPosition, yPosition, 'shelf'))
+                conn.commit()
+            print(xPosition,",",yPosition,"",char)
+            xPosition += 1
+    warehouseFile.close()
+
 def init_suppliers():
     """
     Initialize the suppliers table with example data.
@@ -595,6 +677,7 @@ def init_database():
     Initialize the database with example data.
     """
     # Initialize tables
+    load_grid_from_txt_to_db("layout.txt", 'NewWarehouse')
     init_suppliers()
     init_products()
     init_stock()
