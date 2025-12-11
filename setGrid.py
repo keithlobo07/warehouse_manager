@@ -36,6 +36,20 @@ def save_grid_as_csv(shelves):
         for x, y in shelves:
             writer.writerow([x,y])
 
+#check if cell is free
+def is_free(grid,x,y):
+    return grid[x][y] == 0
+
+#Set target position in the grid 
+def set_target_position(grid, x, y):
+    return (x, y)
+
+# Gets robot position and target position
+def get_robot_position(robot_pos):
+    return robot_pos
+
+def get_target_position(target_pos):
+    return target_pos
 
 #Warehouse Setup
 

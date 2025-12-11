@@ -70,14 +70,10 @@ def a_star_search(grid, start, goal):
                 f_cost = new_cost + manhattan((nx, ny), goal)
                 heapq.heappush(open_set, (f_cost, new_cost, (nx, ny)))
                 came_from[(nx, ny)] = current
-
-            
-            
-            
-           
-                 #path reconstruction
+       
+    #path reconstruction
                  
-  # If goal was never reached
+    # If goal was never reached
     if goal not in came_from and start != goal:
         runtime = time.time() - start_time
         return None, float("inf"), expansions, runtime
