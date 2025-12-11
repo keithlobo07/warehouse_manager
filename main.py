@@ -1,5 +1,5 @@
 import sqlite3
-from func import *
+from db_func import *
 
 db_connect()
 create_tables()
