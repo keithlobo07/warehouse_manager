@@ -129,5 +129,4 @@ def a_star_search(grid, start, goal):
     # cost is path length minus 1
     cost = len(path) - 1
 
-    return path, cost, expansions, runtime           
-            
+    return path, cost, expansions, runtime
