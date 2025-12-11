@@ -23,17 +23,37 @@ Grid_Height = 13
 Train_samples =  500
 Test_samples =  100
 
-#random coord helperss
+#random coord helpers
 def random_x():
     return random.randint(0, Grid_Width - 1)    
 
 def random_y(): 
     return random.randint(0, Grid_Height - 1)   
 
+#load shelf coords
+def load_shelf_coordinates(filename="shelves.csv"):
+    shelves = []
+    with open(filename, "r") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            x, y = map(int, row)
+            shelves.append((x, y))
+    return shelves
+
+#load aisle coords
+def load_aisle_coordinates(filename="aisles.csv"):
+    aisles = []
+    with open(filename, "r") as file:
+        reader = csv.reader(file)
+        for row in reader:
+            x, y = map(int, row)
+            aisles.append((x, y))
+    return aisles
+
 #Creates one training data sample   
-def generate_sample(grid):
-    start = (random_x(), random_y())
-    goal = (random_x(), random_y())
+def generate_sample(grid, aisles, shelves):
+    start = (random.choice(aisles))
+    goal = (random.choice(shelves))
     
     path, cost, expansions, run_time = a_star_search(grid, start, goal)
 
@@ -62,9 +82,11 @@ def generate_dataset(filename, num_samples):
 
     data = []
 
+    s = load_shelf_coordinates("shelves.csv")
+    a = load_aisle_coordinates("aisles.csv")
 
     for _ in range(num_samples):
-            sample = generate_sample(grid)
+            sample = generate_sample(grid, a, s)
             data.append(sample)
 
     #save to csv

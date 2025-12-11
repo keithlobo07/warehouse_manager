@@ -18,6 +18,30 @@ Function to run A* and return:
 def manhattan (a, b):
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
+#find nearest aisle space to start space
+def nearest_aisle(grid, start, goal):
+    gx,gy = goal
+    width = len(grid[0])
+
+    candidates = []
+
+    #left of shelf
+    if gx - 1 >= 0 and grid[gy][gx-1]== 0:
+        candidates.append((gx - 1, gy))
+
+    #right of shelf
+    if gx + 1 < width and grid[gy][gx + 1] == 0:
+        candidates.append((gx + 1, gy))
+
+    #check for empty candidates
+    if not candidates:
+        return None
+    
+    #return aisle with shortest distance to start
+    return min(candidates, key=lambda p: manhattan(p, start))
+
+
+
 #implement a* search algorithm
 def a_star_search(grid, start, goal):
     start_time = time.time()
@@ -25,13 +49,20 @@ def a_star_search(grid, start, goal):
     width = len(grid[0])
     height = len(grid)
 
+    #convert shelf coord to nearest aisle coord
+    if grid[goal[1]][goal[0]] == 1:    # shelf cell
+        adjusted = nearest_aisle(grid, start, goal)
+        if adjusted is None:
+            # Shelf cannot be accessed at all
+            return None, float("inf"), 0, time.time() - start_time
+        goal = adjusted   # set new aisle goal
+
     #priority queue for open set
     open_set = []
     heapq.heappush(open_set, (0, 0, start))
 
     #for reconstructing path    
     came_from = {}
-    
     
     #cost from start to this node
     g_cost = {start: 0}
