@@ -25,15 +25,18 @@ def a_star_search(grid, start, goal):
     width = len(grid[0])
     height = len(grid)
 
+    #priority queue for open set
     open_set = []
     heapq.heappush(open_set, (0, 0, start))
 
-    #for reconstruction
+    #for reconstructing path    
     came_from = {}
+    
+    
     #cost from start to this node
     g_cost = {start: 0}
 
-    expansions = 0
+    expansions = 0 #number of expanded nodes    
 
     #4 possible movements up, right, down, left
     directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  
@@ -41,7 +44,8 @@ def a_star_search(grid, start, goal):
     while open_set:
         f, g, current = heapq.heappop(open_set)
         expansions += 1
-
+        
+        #Goal reached
         if current == goal:
             break
 
@@ -67,24 +71,36 @@ def a_star_search(grid, start, goal):
                 heapq.heappush(open_set, (f_cost, new_cost, (nx, ny)))
                 came_from[(nx, ny)] = current
 
-            #path reconstruction
-            path = []
-            node = goal
-
-            #no valid path
-            if node not in came_from:
-                return None, float("inf"), expansions, time.time() - start_time
             
-            #path from goal to start
-            while node != start:
-                path.append(node)
-                node = came_from[node]
-            path.append(start)
+            
+            
+           
+                 #path reconstruction
+                 
+  # If goal was never reached
+    if goal not in came_from and start != goal:
+        runtime = time.time() - start_time
+        return None, float("inf"), expansions, runtime
 
-            #reverse order (start to goal)
-            path.reverse()
+    # Reconstruct path
+    path = []
+    node = goal
 
-            runtime = time.time() - start_time
+    # Special case: start == goal
+    if start == goal:
+        return [start], 0, expansions, time.time() - start_time
 
-            #return path, cost, expansions, running time
-            return path, len(path) - 1, expansions, runtime
+    while node != start:
+        path.append(node)
+        node = came_from[node]
+
+    path.append(start)
+    path.reverse()
+
+    runtime = time.time() - start_time
+
+    # cost is path length minus 1
+    cost = len(path) - 1
+
+    return path, cost, expansions, runtime           
+            
