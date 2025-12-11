@@ -7,7 +7,7 @@ import csv
 import db_func
 conn, cursor = db_func.db_connect()
 
-from setGrid2 import generate_warehouse, get_warehouse_grid
+from setGrid import generate_warehouse, get_warehouse_grid
 from search import a_star_search
 
 #data needed: start_x, start_y, goal_x, goal_y, path_length, path_exists
@@ -75,7 +75,7 @@ def generate_dataset(filename, num_samples):
 if __name__ == "__main__":
      
      #training data - 500 smaples 
-     generate_dataset('training_data2.csv', Train_samples)
+     generate_dataset('training_data.csv', Train_samples)
 
      #test data - 100 smaples(diffrent from training data)
-     generate_dataset('test_data2.csv', Test_samples)
+     generate_dataset('test_data.csv', Test_samples)
