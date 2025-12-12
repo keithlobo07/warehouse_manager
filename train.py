@@ -11,6 +11,7 @@ import random
 import numpy as np
 import heapq
 import time
+
 from typing import List, Tuple, Optional
 from dqn_model import DQNAgent, GridEnvironment
 from setGrid import generate_warehouse, get_warehouse_grid
@@ -20,7 +21,6 @@ from setGrid import generate_warehouse, get_warehouse_grid
 def heuristic(pos: Tuple[int, int], goal: Tuple[int, int]) -> float:
     """Manhattan distance heuristic"""
     return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
-
 
 def get_neighbors(grid: List[List[int]], pos: Tuple[int, int]) -> List[Tuple[int, int]]:
     """Get valid neighboring positions (up, down, left, right)"""
@@ -36,7 +36,6 @@ def get_neighbors(grid: List[List[int]], pos: Tuple[int, int]) -> List[Tuple[int
                 neighbors.append((new_row, new_col))
     
     return neighbors
-
 
 def a_star_search(
     grid: List[List[int]],
@@ -76,6 +75,7 @@ def a_star_search(
                 continue
             
             tentative_g = g_score[current] + 1
+            
             if neighbor in g_score and tentative_g >= g_score[neighbor]:
                 continue
             
@@ -83,12 +83,10 @@ def a_star_search(
             g_score[neighbor] = tentative_g
             new_f = tentative_g + heuristic(neighbor, goal)
             f_score[neighbor] = new_f
-            
             counter += 1
             heapq.heappush(open_set, (new_f, counter, neighbor))
     
     return None, -1, expansions
-
 
 #==================== TRAINING DATA GENERATION ====================
 
@@ -96,11 +94,16 @@ def generate_training_samples(grid, aisles, shelves, num_samples=1000):
     """
     Generate training samples on-the-fly using A* search.
     
+    Args:
+        grid: 2D grid representation
+        aisles: List of aisle (walkable) positions
+        shelves: List of shelf (goal) positions
+        num_samples: Number of samples to generate
+    
     Returns:
         List of dicts with 'start', 'goal', 'path_length', 'path_exists'
     """
     samples = []
-    
     print(f"Generating {num_samples} A* training samples...")
     
     for i in range(num_samples):
@@ -109,22 +112,20 @@ def generate_training_samples(grid, aisles, shelves, num_samples=1000):
         
         start = random.choice(aisles)
         goal = random.choice(shelves)
-        
         path, cost, expansions = a_star_search(grid, start, goal)
         
-        if use_a_star_sample:
-            a_star_sample = random.choice(a_star_samples)
-    if a_star_sample['path_exists']:
-        episode_start = a_star_sample['start']
-        episode_goal_pos = a_star_sample['goal']
+        # Create sample dict
+        sample = {
+            'start': start,
+            'goal': goal,
+            'path_length': cost if path is not None else -1,
+            'path_exists': 1 if path is not None else 0
+        }
         
-        # Use the proper method instead of direct assignment
-        env.set_episode_target(episode_start, episode_goal_pos)
-
-    # Reset environment
-state = env.reset()
-
-print(f"Generated {num_samples} training samples!")
+        samples.append(sample)
+    
+    print(f"Generated {num_samples} training samples!")
+    return samples
 
 #==================== SAVE FUNCTIONS ====================
 
@@ -134,11 +135,9 @@ def save_agent(agent, filepath):
     torch.save(agent.network.state_dict(), filepath)
     print(f"Agent saved to {filepath}")
 
-
 def save_checkpoint(agent, episode, filepath):
     """Save complete training checkpoint"""
     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-    
     checkpoint = {
         'episode': episode,
         'model_state_dict': agent.network.state_dict(),
@@ -146,15 +145,13 @@ def save_checkpoint(agent, episode, filepath):
         'optimizer_state_dict': agent.optimizer.state_dict(),
         'epsilon': agent.epsilon,
     }
-    
     torch.save(checkpoint, filepath)
     print(f"Checkpoint saved to {filepath}")
 
-
 #==================== TRAINING WITH A* GUIDANCE ====================
 
-def train_agent(grid, start, target_item, a_star_samples=None, 
-                       episodes=1000, batch_size=32):
+def train_agent(grid, start, target_item, a_star_samples=None,
+                episodes=1000, batch_size=32):
     """
     Train DQN agent with optional A* data guidance.
     
@@ -165,8 +162,10 @@ def train_agent(grid, start, target_item, a_star_samples=None,
         a_star_samples: Pre-generated A* samples (or None to skip)
         episodes: Number of training episodes
         batch_size: Replay buffer batch size
-    """
     
+    Returns:
+        Tuple of (agent, env, stats)
+    """
     # Create environment
     env = GridEnvironment(grid, start, target_item)
     
@@ -178,7 +177,6 @@ def train_agent(grid, start, target_item, a_star_samples=None,
     # Training statistics
     episode_rewards = []
     episode_steps = []
-    
     use_a_star = a_star_samples is not None and len(a_star_samples) > 0
     
     print(f"Starting training for {episodes} episodes...")
@@ -187,23 +185,24 @@ def train_agent(grid, start, target_item, a_star_samples=None,
     
     # Main training loop
     for episode in range(episodes):
-        # Decide whether to use A* sample
+        # Decide whether to use A* sample (30% chance)
         use_a_star_sample = (use_a_star and 
-                             a_star_samples and 
-                             random.random() < 0.3)  # 30% chance
+                            a_star_samples and 
+                            random.random() < 0.3)
         
+        # Update environment with A* sample if chosen
         if use_a_star_sample:
             a_star_sample = random.choice(a_star_samples)
+            
+            # Only use if path exists
             if a_star_sample['path_exists']:
                 episode_start = a_star_sample['start']
                 episode_goal_pos = a_star_sample['goal']
                 
-                # Temporarily update environment
-                env.start = episode_start
-                env.agent_pos = np.array(episode_start)
-                env.goal_pos = np.array(episode_goal_pos)
+                # Use the proper method to safely update environment
+                env.set_episode_target(episode_start, episode_goal_pos)
         
-        # Reset environment
+        # Reset environment for new episode
         state = env.reset()
         done = False
         total_reward = 0
@@ -211,25 +210,32 @@ def train_agent(grid, start, target_item, a_star_samples=None,
         
         # Inner loop - run until episode is done
         while not done:
+            # Agent chooses action
             action = agent.act(state)
+            
+            # Execute action in environment
             next_state, reward, done = env.step(action)
+            
+            # Store experience in memory
             agent.remember(state, action, reward, next_state, done)
             
+            # Accumulate rewards and steps
             total_reward += reward
             state = next_state
             steps += 1
             
+            # Train on batch from memory
             agent.replay(batch_size)
         
-        # Store statistics
+        # Store statistics for this episode
         episode_rewards.append(total_reward)
         episode_steps.append(steps)
         
-        # Update target network
+        # Update target network periodically
         if (episode + 1) % 10 == 0:
             agent.update_target_network()
         
-        # Decay epsilon
+        # Decay exploration rate
         agent.decay_epsilon()
         
         # Print progress
@@ -251,7 +257,6 @@ def train_agent(grid, start, target_item, a_star_samples=None,
     
     return agent, env, stats
 
-
 #==================== MAIN ====================
 
 if __name__ == "__main__":
@@ -262,14 +267,13 @@ if __name__ == "__main__":
     NUM_A_STAR_SAMPLES = 1000
     
     print("=" * 60)
-    print("DQN PATHFINDING")
+    print("DQN PATHFINDING - TRAINING")
     print("=" * 60)
     
     # Setup warehouse grid
     print("Setting up warehouse grid...")
     shelf_coords, aisle_coords = get_warehouse_grid()
     grid = generate_warehouse(63, 13, shelf_coords)
-    
     start_pos = aisle_coords[0] if aisle_coords else (1, 1)
     target_item = 5
     

@@ -7,6 +7,8 @@
 import torch
 import os
 import json
+import numpy as np
+
 from dqn_model import DQNAgent, GridEnvironment
 from setGrid import generate_warehouse, get_warehouse_grid
 
@@ -39,7 +41,6 @@ def load_agent(state_size, action_size, filepath):
         print(f"Error loading agent: {e}")
         return None
 
-
 #==================== INFERENCE FUNCTION ====================
 
 def find_path(agent, env, start, target_item, max_steps=100):
@@ -55,8 +56,8 @@ def find_path(agent, env, start, target_item, max_steps=100):
     
     Returns:
         Tuple of (path, total_reward):
-            - path: List of positions visited
-            - total_reward: Sum of all rewards
+        - path: List of positions visited
+        - total_reward: Sum of all rewards
     """
     state = env.reset()
     path = [tuple(env.agent_pos)]
@@ -76,7 +77,6 @@ def find_path(agent, env, start, target_item, max_steps=100):
             break
     
     return path, total_reward
-
 
 #==================== VISUALIZATION FUNCTION ====================
 
@@ -108,7 +108,6 @@ def visualize_path(grid, path, target_item):
     for row in grid_copy:
         print(' '.join(str(cell) for cell in row))
 
-
 #==================== ACTION NAMES ====================
 
 ACTION_NAMES = {
@@ -117,7 +116,6 @@ ACTION_NAMES = {
     2: "LEFT",
     3: "RIGHT"
 }
-
 
 #==================== MAIN ====================
 
@@ -143,9 +141,10 @@ if __name__ == "__main__":
     
     # Check if trained model exists
     model_path = 'models/pathfinder_trained.pth'
+    
     if not os.path.exists(model_path):
         print(f"Model not found at {model_path}")
-        print("Please run train_unified.py first to train the model.")
+        print("Please run train.py first to train the model.")
         exit()
     
     # Load the trained model
@@ -172,8 +171,8 @@ if __name__ == "__main__":
         print(f"Path found!")
         print(f"Path length: {len(path) - 1} steps")
         print(f"Total reward: {total_reward:.2f}")
-        print(f"\nPath coordinates:")
         
+        print(f"\nPath coordinates:")
         for i, pos in enumerate(path):
             if i < len(path) - 1:
                 print(f"  Step {i}: {pos}")
