@@ -1,7 +1,7 @@
 #============================================================================
-# train.py - Complete Training Pipeline (A* + DQN)
-# Generates training data and trains DQN agent in one script
-# Grid convention: 0=walkable, 1=wall, other=shelf/item
+#train.py - Complete Training Pipeline (A* + DQN)
+#Generates training data and trains DQN agent in one script
+#Grid convention: 0=walkable, 1=wall, other=shelf/item
 #============================================================================
 
 import torch
@@ -32,7 +32,7 @@ def get_neighbors(grid: List[List[int]], pos: Tuple[int, int]) -> List[Tuple[int
     for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
         new_row, new_col = row + dr, col + dc
         if 0 <= new_row < height and 0 <= new_col < width:
-            if grid[new_row][new_col] != 1:  # Not a wall
+            if grid[new_row][new_col] != 1:  #Not a wall
                 neighbors.append((new_row, new_col))
     
     return neighbors
@@ -114,7 +114,7 @@ def generate_training_samples(grid, aisles, shelves, num_samples=1000):
         goal = random.choice(shelves)
         path, cost, expansions = a_star_search(grid, start, goal)
         
-        # Create sample dict
+        #Create sample dict
         sample = {
             'start': start,
             'goal': goal,
@@ -166,15 +166,15 @@ def train_agent(grid, start, target_item, a_star_samples=None,
     Returns:
         Tuple of (agent, env, stats)
     """
-    # Create environment
+    #Create environment
     env = GridEnvironment(grid, start, target_item)
     
-    # Create agent
+    #Create agent
     state_size = 12
     action_size = 4
     agent = DQNAgent(state_size, action_size)
     
-    # Training statistics
+    #Training statistics
     episode_rewards = []
     episode_steps = []
     use_a_star = a_star_samples is not None and len(a_star_samples) > 0
@@ -183,62 +183,62 @@ def train_agent(grid, start, target_item, a_star_samples=None,
     print(f"A* guidance: {'Enabled' if use_a_star else 'Disabled'}")
     print("=" * 60)
     
-    # Main training loop
+    #Main training loop
     for episode in range(episodes):
-        # Decide whether to use A* sample (30% chance)
+        #Decide whether to use A* sample (30% chance)
         use_a_star_sample = (use_a_star and 
                             a_star_samples and 
                             random.random() < 0.3)
         
-        # Update environment with A* sample if chosen
+        #Update environment with A* sample if chosen
         if use_a_star_sample:
             a_star_sample = random.choice(a_star_samples)
             
-            # Only use if path exists
+            #Only use if path exists
             if a_star_sample['path_exists']:
                 episode_start = a_star_sample['start']
                 episode_goal_pos = a_star_sample['goal']
                 
-                # Use the proper method to safely update environment
+                #Use the proper method to safely update environment
                 env.set_episode_target(episode_start, episode_goal_pos)
         
-        # Reset environment for new episode
+        #Reset environment for new episode
         state = env.reset()
         done = False
         total_reward = 0
         steps = 0
         
-        # Inner loop - run until episode is done
+        #Inner loop - run until episode is done
         while not done:
-            # Agent chooses action
+            #Agent chooses action
             action = agent.act(state)
             
-            # Execute action in environment
+            #Execute action in environment
             next_state, reward, done = env.step(action)
             
-            # Store experience in memory
+            #Store experience in memory
             agent.remember(state, action, reward, next_state, done)
             
-            # Accumulate rewards and steps
+            #Accumulate rewards and steps
             total_reward += reward
             state = next_state
             steps += 1
             
-            # Train on batch from memory
+            #Train on batch from memory
             agent.replay(batch_size)
         
-        # Store statistics for this episode
+        #Store statistics for this episode
         episode_rewards.append(total_reward)
         episode_steps.append(steps)
         
-        # Update target network periodically
+        #Update target network periodically
         if (episode + 1) % 10 == 0:
             agent.update_target_network()
         
-        # Decay exploration rate
+        #Decay exploration rate
         agent.decay_epsilon()
         
-        # Print progress
+        #Print progress
         if (episode + 1) % 50 == 0:
             avg_reward = np.mean(episode_rewards[-50:])
             avg_steps = np.mean(episode_steps[-50:])
@@ -260,17 +260,17 @@ def train_agent(grid, start, target_item, a_star_samples=None,
 #==================== MAIN ====================
 
 if __name__ == "__main__":
-    # Configuration
+    #Configuration
     EPISODES = 1000
     BATCH_SIZE = 32
-    GENERATE_DATA = True  # Set to False to skip A* data generation
+    GENERATE_DATA = True  #Set to False to skip A* data generation
     NUM_A_STAR_SAMPLES = 1000
     
     print("=" * 60)
     print("DQN PATHFINDING - TRAINING")
     print("=" * 60)
     
-    # Setup warehouse grid
+    #Setup warehouse grid
     print("Setting up warehouse grid...")
     shelf_coords, aisle_coords = get_warehouse_grid()
     grid = generate_warehouse(63, 13, shelf_coords)
@@ -284,14 +284,14 @@ if __name__ == "__main__":
     print(f"Target item: {target_item}")
     print("=" * 60)
     
-    # Generate A* training data
+    #Generate A* training data
     a_star_samples = None
     if GENERATE_DATA:
         print("\n--- A* DATA GENERATION PHASE ---")
         a_star_samples = generate_training_samples(grid, aisle_coords, shelf_coords, NUM_A_STAR_SAMPLES)
         print(f"Loaded {len(a_star_samples)} A* samples for guidance\n")
     
-    # Train DQN agent
+    #Train DQN agent
     print("--- DQN TRAINING PHASE ---")
     agent, env, stats = train_agent(
         grid,
@@ -302,12 +302,12 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE
     )
     
-    # Save models
+    #Save models
     os.makedirs('models', exist_ok=True)
     save_agent(agent, 'models/pathfinder_trained.pth')
     save_checkpoint(agent, EPISODES, 'models/pathfinder_checkpoint.pth')
     
-    # Save training statistics
+    #Save training statistics
     with open('models/training_stats.json', 'w') as f:
         json.dump({
             'episodes': EPISODES,

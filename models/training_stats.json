@@ -1,0 +1,7 @@
+{
+  "episodes": 1000,
+  "final_epsilon": 0.02485244898125998,
+  "avg_final_reward": 160.9829187588735,
+  "avg_final_steps": 19.84,
+  "a_star_samples_used": 1000
+}

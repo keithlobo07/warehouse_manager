@@ -1,7 +1,7 @@
 #============================================================================
-# inference.py - Inference Script
-# Uses trained model to find paths in the grid
-# Grid convention: 0=walkable, 1=wall, other=shelf/item
+#inference.py - Inference Script
+#Uses trained model to find paths in the grid
+#Grid convention: 0=walkable, 1=wall, other=shelf/item
 #============================================================================
 
 import torch
@@ -91,19 +91,19 @@ def visualize_path(grid, path, target_item):
     """
     import numpy as np
     
-    # Create a copy of the grid
+    #Create a copy of the grid
     grid_copy = [row[:] for row in grid]
     
-    # Mark each position in the path with "-" (except the goal)
-    for i, pos in enumerate(path[:-1]):  # Exclude final position
+    #Mark each position in the path with "-" (except the goal)
+    for i, pos in enumerate(path[:-1]):  #Exclude final position
         grid_copy[pos[0]][pos[1]] = "-"
     
-    # Mark the final position with the target item number
+    #Mark the final position with the target item number
     if path:
         final_pos = path[-1]
         grid_copy[final_pos[0]][final_pos[1]] = target_item
     
-    # Print the visualization
+    #Print the visualization
     print("\nVisualization (- = path, number = goal):")
     for row in grid_copy:
         print(' '.join(str(cell) for cell in row))
@@ -120,17 +120,17 @@ ACTION_NAMES = {
 #==================== MAIN ====================
 
 if __name__ == "__main__":
-    # Setup
+    #Setup
     print("=" * 60)
     print("DQN PATHFINDING - INFERENCE")
     print("=" * 60)
     
-    # Create warehouse grid
+    #Create warehouse grid
     print("Setting up warehouse grid...")
     shelf_coords, aisle_coords = get_warehouse_grid()
     grid = generate_warehouse(63, 13, shelf_coords)
     
-    # Use first aisle as start, first shelf as target
+    #Use first aisle as start, first shelf as target
     start_pos = aisle_coords[0] if aisle_coords else (1, 1)
     target_item = 5
     
@@ -139,7 +139,7 @@ if __name__ == "__main__":
     print(f"Target item: {target_item}")
     print("=" * 60)
     
-    # Check if trained model exists
+    #Check if trained model exists
     model_path = 'models/pathfinder_trained.pth'
     
     if not os.path.exists(model_path):
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         print("Please run train.py first to train the model.")
         exit()
     
-    # Load the trained model
+    #Load the trained model
     print(f"Loading trained model from {model_path}...")
     agent = load_agent(state_size=12, action_size=4, filepath=model_path)
     
@@ -155,14 +155,14 @@ if __name__ == "__main__":
         print("Failed to load model. Exiting.")
         exit()
     
-    # Create environment for inference
+    #Create environment for inference
     env = GridEnvironment(grid, start_pos, target_item)
     
-    # Find a path using the trained agent
+    #Find a path using the trained agent
     print("\nRunning inference...")
     path, total_reward = find_path(agent, env, start_pos, target_item)
     
-    # Display results
+    #Display results
     print("\n" + "=" * 60)
     print("RESULTS")
     print("=" * 60)
@@ -179,7 +179,7 @@ if __name__ == "__main__":
             else:
                 print(f"  Goal: {pos}")
         
-        # Visualize the path
+        #Visualize the path
         visualize_path(grid, path, target_item)
     else:
         print("No path found (agent did not move).")
