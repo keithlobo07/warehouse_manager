@@ -202,7 +202,7 @@ def load_grid_from_txt_to_db(filePath, warehouseName):
             elif (goodChar == "S"):
                 cursor.execute("INSERT INTO spaces(warehouseID, xPos, yPos, type) values (?, ?, ?, ?)",(newWarehouseID, xPosition, yPosition, 'shelf'))
                 conn.commit()
-            print(xPosition,",",yPosition,"",char)
+            #print(xPosition,",",yPosition,"",char)
             xPosition += 1
     warehouseFile.close()
 
@@ -1057,4 +1057,15 @@ def view_tables(table):
     cursor.execute(f"SELECT * FROM {table};")
     rows = cursor.fetchall()
     print(f"{table.capitalize()} Table:")
+    print(tabulate(rows, headers=[desc[0] for desc in cursor.description], tablefmt="grid"))
+    
+def view_stock(prodID):
+    """
+    Utility function to view stock for a given product ID.
+    
+    :param prodID: Product ID
+    """
+    cursor.execute('SELECT * FROM stock WHERE productID = ?;', (prodID,))
+    rows = cursor.fetchall()
+    print(f"Stock for Product ID {prodID}:")
     print(tabulate(rows, headers=[desc[0] for desc in cursor.description], tablefmt="grid"))
