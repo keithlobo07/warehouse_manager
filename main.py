@@ -77,7 +77,7 @@ while True:
             if not itemID.isdigit():
                 print("Item ID must be numeric.\n")
                 continue
-            quantity = input("Enter new stock quantity: ")
+            quantity = int(input("Enter new stock quantity: "))
             if not quantity.isdigit():
                 print("Quantity must be numeric.\n")
                 continue
