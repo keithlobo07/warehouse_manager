@@ -1,60 +1,104 @@
+"""
+---main2.py---
+This is the main interface for the warehouse manager application.
+It allows users to interact with the system through a menu-driven approach.
+"""
+
 import sqlite3
 from db_func import *
 from setGrid import *
 from search import a_star_search
+from func import *
 
-db_connect()
-#view_tables()
 print('---------------------WAREHOUSE MANAGER-----------------------\n')
-
 print("Welcome to Warehouse Manager!\n")
-print("1. Show warehouse grid\n2.Show robot initial state\n3.Run A* (with verbose mode)\n4.Show path + cost\n5.Show ML model predicting path cost\n6.Compare ML vs A*\n")
-choice = int(input("Choose\n"))
-while (choice != 0):
-    print("1. Show warehouse grid\n2.Show robot initial state\n3.Run A* (with verbose mode)\n4.Show path + cost\n5.Show ML model predicting path cost\n6.Compare ML vs A*\n0.Exit")
-    choice = int(input("Choose\n"))
 
+while True:
+    menu()
+    choice = int(input("Choose an option: "))
+    
     match choice:
         case 1:
-            print("Show warehouse grid selected\n")
-            #generate warehouse
-            shelf_coords, path_coords = get_warehouse_grid()
-            grid = generate_warehouse(63, 13, shelf_coords)
-            #print warehouse grid
-            print_grid(grid)
-            #should print grid be a separate case?????????????           
+            print("------------------Add supplier------------------\n")
+            # Input and Input validation for supplier details
+            supID = input("Enter Supplier ID: ")
+            if not supID.isdigit():
+                print("Supplier ID must be numeric.\n")
+                continue
+            supName = input("Enter Supplier Name: ")
+            contactName = input("Enter Contact Name: ")
+            contactEmail = input("Enter Contact Email: ")
+            # Call function to add supplier
+            add_supplier(supID, supName, contactName, contactEmail)
         case 2:
-            print("Show robot initial state selected\n")
-            #explain robot rest point
-            #show coords of robot and status
+            print("------------------Remove supplier------------------\n")
+            # Input and Input validation for supplier ID
+            supID = input("Enter Supplier ID to remove: ")
+            if not supID.isdigit():
+                print("Supplier ID must be numeric.\n")
+                continue
+            # Call function to remove supplier
+            remove_supplier(supID)
         case 3:
-            print("Run A* (with verbose mode) selected\n")
-            #run a_star_search
-            #return path, cost, expansions, runtime
+            print("------------------View suppliers------------------\n")
+            # Call function to view suppliers
+            view_tables("suppliers")
         case 4:
-            print("Show path + cost selected\n")
-            #can we use case 4 without case 3??????
+            print("--------------------Add product--------------------\n")
+            # Call function to add product
+            prodID = input("Enter Product ID: ")
+            if not prodID.isdigit():
+                print("Product ID must be numeric.\n")
+                continue
+            prodName = input("Enter Product Name: ")
+            ean = input("Enter EAN: ")
+            price = input("Enter Price: ")
+            supID = input("Enter Supplier ID: ")
+            if not supID.isdigit():
+                print("Supplier ID must be numeric.\n")
+                continue
+            add_product(prodID, prodName, ean, price, supID)
         case 5:
-            print("Show ML model predicting path cost selected\n")
-            #
+            print("-----------------Remove product-----------------\n")
+            # Call function to remove product
+            prodID = input("Enter Product ID to remove: ")
+            if not prodID.isdigit():
+                print("Product ID must be numeric.\n")
+                continue
+            remove_product(prodID)
         case 6:
-            print("Compare ML vs A* selected\n")
-            #run both ml and a* and compare results
+            print("-----------------View products-----------------\n")
+            # Call function to view products
+            view_tables("products")
+        case 7:
+            print("-----------------Update stock-----------------\n")
+            # Call function to update stock
+            itemID = input("Enter Item ID to update stock: ")
+            if not itemID.isdigit():
+                print("Item ID must be numeric.\n")
+                continue
+            quantity = input("Enter new stock quantity: ")
+            if not quantity.isdigit():
+                print("Quantity must be numeric.\n")
+                continue
+            if int(quantity) < 0:
+                print("Quantity cannot be negative.\n")
+                continue
+            update_stock(prodID, quantity)
+        case 8:
+            print("-----------------Perform stock check-----------------\n")
+            # Call function to perform stock check
+            stock_check()
+        case 9:
+            print("-----------------View stock for itemID-----------------\n")
+            # Call function to view stock for specific itemID
+            prodID = input("Enter Product ID to view stock: ")
+            if not prodID.isdigit():
+                print("Product ID must be numeric.\n")
+                continue
+            view_stock(prodID)
         case 0:
             print("EXITING\n")
             exit(0)
         case _:
-            choice = int(input("Invalid. Please choose again"))
-
-'''
-•    Show warehouse grid
-•    Show robot initial state
-•    Run A* (with verbose mode)
-•    Show path + cost
-•    Show ML model predicting path cost
-•    Compare ML vs A*
-•    Mention running time
-•    Explain results clearly
-•    Clean screen layout
-•    Trim video to 5 minutes
-'''
+            print("Invalid choice. Please choose again.\n")
