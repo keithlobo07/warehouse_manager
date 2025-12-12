@@ -1,17 +1,29 @@
-#setGrid.py 
-#Simple warehouse grid generator for AI pathfinding (A*, ML)
-#creates aisles and shelves and export shelf coordinates into shelves.csv
+"""
+---setGrid.py---\n
+Simple warehouse grid generator for AI pathfinding (A*, ML)\n
+Creates aisles and shelves and export shelf coordinates into shelves.csv
+"""
 
+# Imports
 from db_func import db_connect
 
+# Database connection
 conn, cursor = db_connect()
 
-# Create a empty 2D grid (0 = empty, 1 = obstacle)
 def create_grid(width, height):
+    """
+    Creates a 2D grid initialized with zeros.
+    0 indicates free space, and 1 indicates an obstacle.
+    
+    :param width: Width of the grid
+    :param height: Height of the grid
+    """
     return [[0 for _ in range(width)] for _ in range(height)]
 
-# Get shelf and path coordinates from the database
 def get_warehouse_grid():
+    """
+    Retrieves shelf and path coordinates from the database.
+    """
     shelves=[]
     paths=[]
     cursor.execute("SELECT xPos, yPos FROM spaces WHERE type='shelf';")
@@ -21,12 +33,24 @@ def get_warehouse_grid():
     
     return shelves, paths
 
-# Adding an obstacle at a specific grid cell
 def add_obstacle(grid, x, y):
+    """
+    Adds an obstacle at the specified (x, y) position in the grid.
+    
+    :param grid: List of Lists representing the grid
+    :param x: X-coordinate of the obstacle
+    :param y: Y-coordinate of the obstacle
+    """
     grid[y][x]= 1
 
-# Generate warehouse grid with given shelf coordinates
 def generate_warehouse(width, height, shelf_coords):
+    """
+    Generates a warehouse grid with shelves as obstacles.
+
+    :param width: Width of the grid
+    :param height: Height of the grid
+    :param shelf_coords: List of tuples representing shelf coordinates
+    """
     grid = create_grid(width, height)
     
     for x, y in shelf_coords:
@@ -34,28 +58,15 @@ def generate_warehouse(width, height, shelf_coords):
     
     return grid
 
-# Display grid as 0 and 1s
 def print_grid(grid):
+    """
+    Displays the grid as 0s and 1s.
+    
+    :param grid: List of Lists representing the grid
+    """
     for row in grid:
         print(" ".join(str(cell) for cell in row))
 
-# what's going on here
-'''
-# Check if cell is free
-def is_free(grid,x,y):
-    return grid[x][y] == 0
-
-# Set target position in the grid 
-def set_target_position(grid, x, y):
-    return (x, y)
-
-# Gets robot position and target position
-def get_robot_position(robot_pos):
-    return robot_pos
-
-def get_target_position(target_pos):
-    return target_pos
-'''
 # test code
 '''
 shelf_coords, path_coords = get_warehouse_grid()
