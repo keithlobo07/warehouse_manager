@@ -84,20 +84,20 @@ def visualize_path(grid, path, target_item):
     """Display grid with path marked as S (start), - (path), G (goal)"""
     import numpy as np
     
-    # Create a copy of the grid
+    #Create a copy of the grid
     grid_copy = [row[:] for row in grid]
     
-    # Mark start position FIRST
+    #Mark start position FIRST
     if path:
         start_pos = path[0]
         grid_copy[start_pos[0]][start_pos[1]] = "S"
     
-    # Mark intermediate path positions
+    #Mark intermediate path positions
     for i in range(1, len(path) - 1):
         pos = path[i]
         grid_copy[pos[0]][pos[1]] = "-"
     
-    # Mark goal position LAST (only if different from start)
+    #Mark goal position LAST (only if different from start)
     if len(path) > 1:
         goal_pos = path[-1]
         if not np.array_equal(goal_pos, path[0]):
@@ -105,7 +105,7 @@ def visualize_path(grid, path, target_item):
         else:
             grid_copy[goal_pos[0]][goal_pos[1]] = "S/G"
     
-    # Print the visualization
+    #Print the visualization
     print("\nVisualization (S = start, - = path, G = goal):")
     for row in grid_copy:
         print(' '.join(str(cell) for cell in row))
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     print("DQN PATHFINDING - INFERENCE")
     print("=" * 60)
     
-    # Load grid from JSON if it exists
+    #Load grid from JSON if it exists
 grid_file = 'grid_data.json'
 if os.path.exists(grid_file):
     print(f"Loading grid from {grid_file}...")
@@ -139,7 +139,7 @@ if os.path.exists(grid_file):
     target_item = grid_data['target_item']
     print(f"Loaded custom grid from JSON")
 else:
-    # Fallback: generate grid if JSON doesn't exist
+    #Fallback: generate grid if JSON doesn't exist
     print("Setting up warehouse grid...")
     shelf_coords, aisle_coords = get_warehouse_grid()
     grid = generate_warehouse(63, 13, shelf_coords)
@@ -150,7 +150,7 @@ else:
     
     #Use first aisle as start, first shelf as target
     start_pos = aisle_coords[0] if aisle_coords else (1, 1)
-    # Auto-select any item in grid (not 0 or 1)
+    #Auto-select any item in grid (not 0 or 1)
     unique_items = set(cell for row in grid for cell in row if cell not in [0, 1])
     target_item = min(unique_items) if unique_items else 2
     print(f"Available items: {sorted(unique_items)} | Selected: {target_item}")
