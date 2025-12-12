@@ -100,7 +100,7 @@ class GridEnvironment:
         Initialize the environment
         
         Args:
-            grid: 2D list where 1=walkable, 0=wall, other=item
+            grid: 2D list where 0=walkable, 0=wall, other=item
             start: Tuple (row, col) for agent start position
             target_item: The number of the item to find
         """
@@ -272,16 +272,16 @@ class GridEnvironment:
         #===== Check if move is out of bounds =====
         if not self._is_valid(new_pos):
             #Out of bounds is bad - give large negative reward
-            reward = -10
+            reward = -20
             #Episode continues (agent can try another action)
             done = False
             #Return current state (agent didn't move), reward, and done flag
             return self._get_state(), reward, done
         
         #===== Check if moving into a wall =====
-        if self.grid[new_pos[0], new_pos[1]] == 0:
+        if self.grid[new_pos[0], new_pos[1]] == 1:
             #Hitting a wall is bad - give large negative reward
-            reward = -10
+            reward = -20
             #Episode continues
             done = False
             return self._get_state(), reward, done
@@ -292,7 +292,7 @@ class GridEnvironment:
         #===== Check if reached the goal =====
         if np.array_equal(self.agent_pos, self.goal_pos):
             #Success! Give huge positive reward
-            reward = 100
+            reward = 1000
             #Episode is done (goal reached)
             done = True
             return self._get_state(), reward, done
@@ -354,12 +354,12 @@ class DQNAgent:
         
         #Epsilon minimum - never explore less than this
         #Ensures some exploration even late in training
-        self.epsilon_min = 0.01
+        self.epsilon_min = 0.025
         
         #Epsilon decay - how fast to reduce exploration
-        #After each episode: epsilon *= 0.995
+        #After each episode: epsilon *= 0.999
         #So epsilon slowly decreases over time
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.999
         
         #Create the main network - this one gets trained
         self.network = DQNNetwork(state_size, num_actions=action_size)
@@ -544,6 +544,6 @@ class DQNAgent:
         """
         #Check if epsilon is above minimum
         if self.epsilon > self.epsilon_min:
-            #Multiply epsilon by decay factor (0.995)
+            #Multiply epsilon by decay factor (0.999)
             #This gradually decreases epsilon from 1.0 toward epsilon_min
             self.epsilon *= self.epsilon_decay

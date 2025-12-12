@@ -1,262 +1,316 @@
 #============================================================================
-#Training Script - Train the DQN Agent on Grid Pathfinding
+# train_unified.py - Complete Training Pipeline (A* + DQN)
+# Generates training data and trains DQN agent in one script
+# Grid convention: 0=walkable, 1=wall, other=shelf/item
 #============================================================================
 
-#Import PyTorch for neural network operations
 import torch
-
-#Import os for file and directory operations
 import os
-
-#Import json for reading/writing JSON files
 import json
-
-#Import the DQN classes we defined in dqn_model.py
+import random
+import numpy as np
+import heapq
+import time
+from typing import List, Tuple, Optional
 from dqn_model import DQNAgent, GridEnvironment
+from setGrid import generate_warehouse, get_warehouse_grid
+
+#==================== A* PATHFINDING ====================
+
+def heuristic(pos: Tuple[int, int], goal: Tuple[int, int]) -> float:
+    """Manhattan distance heuristic"""
+    return abs(pos[0] - goal[0]) + abs(pos[1] - goal[1])
+
+
+def get_neighbors(grid: List[List[int]], pos: Tuple[int, int]) -> List[Tuple[int, int]]:
+    """Get valid neighboring positions (up, down, left, right)"""
+    row, col = pos
+    height = len(grid)
+    width = len(grid[0])
+    neighbors = []
+    
+    for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        new_row, new_col = row + dr, col + dc
+        if 0 <= new_row < height and 0 <= new_col < width:
+            if grid[new_row][new_col] != 1:  # Not a wall
+                neighbors.append((new_row, new_col))
+    
+    return neighbors
+
+
+def a_star_search(
+    grid: List[List[int]],
+    start: Tuple[int, int],
+    goal: Tuple[int, int]
+) -> Tuple[Optional[List[Tuple[int, int]]], int, int]:
+    """Find shortest path using A* algorithm"""
+    open_set = [(0, 0, start)]
+    counter = 0
+    came_from = {}
+    g_score = {start: 0}
+    f_score = {start: heuristic(start, goal)}
+    closed_set = set()
+    expansions = 0
+    
+    while open_set:
+        _, _, current = heapq.heappop(open_set)
+        
+        if current in closed_set:
+            continue
+        
+        closed_set.add(current)
+        expansions += 1
+        
+        if current == goal:
+            path = []
+            node = current
+            while node in came_from:
+                path.append(node)
+                node = came_from[node]
+            path.append(start)
+            path.reverse()
+            return path, len(path) - 1, expansions
+        
+        for neighbor in get_neighbors(grid, current):
+            if neighbor in closed_set:
+                continue
+            
+            tentative_g = g_score[current] + 1
+            if neighbor in g_score and tentative_g >= g_score[neighbor]:
+                continue
+            
+            came_from[neighbor] = current
+            g_score[neighbor] = tentative_g
+            new_f = tentative_g + heuristic(neighbor, goal)
+            f_score[neighbor] = new_f
+            
+            counter += 1
+            heapq.heappush(open_set, (new_f, counter, neighbor))
+    
+    return None, -1, expansions
+
+
+#==================== TRAINING DATA GENERATION ====================
+
+def generate_training_samples(grid, aisles, shelves, num_samples=1000):
+    """
+    Generate training samples on-the-fly using A* search.
+    
+    Returns:
+        List of dicts with 'start', 'goal', 'path_length', 'path_exists'
+    """
+    samples = []
+    
+    print(f"Generating {num_samples} A* training samples...")
+    
+    for i in range(num_samples):
+        if (i + 1) % 50 == 0:
+            print(f"  Progress: {i + 1}/{num_samples}")
+        
+        start = random.choice(aisles)
+        goal = random.choice(shelves)
+        
+        path, cost, expansions = a_star_search(grid, start, goal)
+        
+        sample = {
+            'start': start,
+            'goal': goal,
+            'path_length': cost if path is not None else -1,
+            'path_exists': 1 if path is not None else 0
+        }
+        samples.append(sample)
+    
+    print(f"Generated {num_samples} training samples!")
+    return samples
+
 
 #==================== SAVE FUNCTIONS ====================
 
 def save_agent(agent, filepath):
-    """
-    Save only the trained network weights (used for inference later)
-    
-    This saves a minimal file containing just the learned parameters.
-    Much lighter than saving the entire model.
-    
-    Args:
-        agent: The DQNAgent object to save
-        filepath: Where to save the file (e.g., 'models/pathfinder_trained.pth')
-    """
-    #Create the directory path if it doesn't exist
-    #os.path.dirname(filepath) extracts the directory from filepath
-    #exist_ok=True means don't fail if directory already exists
+    """Save trained network weights"""
     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
-    
-    #Save only the network weights (state_dict) to a PyTorch file
-    #state_dict contains all learnable parameters (weights and biases)
     torch.save(agent.network.state_dict(), filepath)
-    
-    #Print confirmation message
     print(f"Agent saved to {filepath}")
 
+
 def save_checkpoint(agent, episode, filepath):
-    """
-    Save complete training checkpoint (used to resume training later)
-    
-    This saves everything needed to continue training from where it stopped:
-    - Model weights
-    - Target network weights
-    - Optimizer state
-    - Current epsilon value
-    
-    Args:
-        agent: The DQNAgent object to save
-        episode: Current episode number (for resume info)
-        filepath: Where to save the checkpoint file
-    """
-    #Create the directory if it doesn't exist
+    """Save complete training checkpoint"""
     os.makedirs(os.path.dirname(filepath) if os.path.dirname(filepath) else '.', exist_ok=True)
     
-    #Create a dictionary containing all training state
     checkpoint = {
-        #The episode number we're at (for resuming)
         'episode': episode,
-        
-        #The main network weights
         'model_state_dict': agent.network.state_dict(),
-        
-        #The target network weights
         'target_network_state_dict': agent.target_network.state_dict(),
-        
-        #The optimizer state (momentum, learning rate schedules, etc.)
         'optimizer_state_dict': agent.optimizer.state_dict(),
-        
-        #The current exploration rate (so we resume with same exploration level)
         'epsilon': agent.epsilon,
     }
     
-    #Save the entire checkpoint dictionary to file
     torch.save(checkpoint, filepath)
-    
-    #Print confirmation
     print(f"Checkpoint saved to {filepath}")
 
-#==================== TRAINING FUNCTION ====================
 
-def train_agent(grid, start, target_item, episodes=500, batch_size=32):
+#==================== TRAINING WITH A* GUIDANCE ====================
+
+def train_agent_unified(grid, start, target_item, a_star_samples=None, 
+                       episodes=1000, batch_size=32):
     """
-    Train the DQN agent for a specified number of episodes
-    
-    This is the main training loop where the agent learns to navigate the grid.
+    Train DQN agent with optional A* data guidance.
     
     Args:
-        grid: 2D list representing the grid (1=walkable, 0=wall, numbers=items)
-        start: Tuple (row, col) of agent starting position
-        target_item: The number of the item to find
-        episodes: How many episodes to train for (500 default)
-        batch_size: How many experiences to train on per step (32 default)
-        
-    Returns:
-        Tuple of (trained_agent, environment)
+        grid: 2D grid (0=walkable, 1=wall, other=shelf)
+        start: Starting position
+        target_item: Target item number
+        a_star_samples: Pre-generated A* samples (or None to skip)
+        episodes: Number of training episodes
+        batch_size: Replay buffer batch size
     """
-    #Create the environment (the grid world)
+    
+    # Create environment
     env = GridEnvironment(grid, start, target_item)
     
-    #Size of the state vector (agent pos + goal pos + 8 surrounding cells = 12)
+    # Create agent
     state_size = 12
-    
-    #Number of possible actions (up, down, left, right = 4)
     action_size = 4
-    
-    #Create a new DQN agent with the specified state and action sizes
     agent = DQNAgent(state_size, action_size)
     
-    #Print training information
-    print(f"Starting training for {episodes} episodes...")
-    print(f"Grid size: {env.grid_size}, Start: {start}, Target item: {target_item}")
+    # Training statistics
+    episode_rewards = []
+    episode_steps = []
     
-    #Main training loop - iterate through episodes
+    use_a_star = a_star_samples is not None and len(a_star_samples) > 0
+    
+    print(f"Starting training for {episodes} episodes...")
+    print(f"A* guidance: {'Enabled' if use_a_star else 'Disabled'}")
+    print("=" * 60)
+    
+    # Main training loop
     for episode in range(episodes):
-        #Reset environment for new episode, get initial state
+        # Decide whether to use A* sample
+        use_a_star_sample = (use_a_star and 
+                             a_star_samples and 
+                             random.random() < 0.3)  # 30% chance
+        
+        if use_a_star_sample:
+            a_star_sample = random.choice(a_star_samples)
+            if a_star_sample['path_exists']:
+                episode_start = a_star_sample['start']
+                episode_goal_pos = a_star_sample['goal']
+                
+                # Temporarily update environment
+                env.start = episode_start
+                env.agent_pos = np.array(episode_start)
+                env.goal_pos = np.array(episode_goal_pos)
+        
+        # Reset environment
         state = env.reset()
-        
-        #Flag to track if episode is finished
         done = False
-        
-        #Track total reward for this episode (for monitoring)
         total_reward = 0
-        
-        #Track number of steps taken in this episode
         steps = 0
         
-        #Inner loop - run until episode is done
+        # Inner loop - run until episode is done
         while not done:
-            #Agent picks an action using epsilon-greedy strategy
-            #With probability epsilon: random action (explore)
-            #With probability 1-epsilon: best known action (exploit)
             action = agent.act(state)
-            
-            #Execute the action in the environment
-            #get back: next state, reward for this step, done flag
             next_state, reward, done = env.step(action)
-            
-            #Store this experience in replay buffer for later learning
             agent.remember(state, action, reward, next_state, done)
             
-            #Add this step's reward to episode total
             total_reward += reward
-            
-            #Update state for next iteration
             state = next_state
-            
-            #Increment step counter
             steps += 1
             
-            #Train on a random batch from replay buffer
-            #This improves the network based on past experiences
             agent.replay(batch_size)
         
-        #After every 10 episodes, update the target network
-        #Target network copy provides stable Q-value targets
+        # Store statistics
+        episode_rewards.append(total_reward)
+        episode_steps.append(steps)
+        
+        # Update target network
         if (episode + 1) % 10 == 0:
             agent.update_target_network()
         
-        #After each episode, decrease exploration rate (epsilon)
-        #So agent gradually shifts from exploring to exploiting
+        # Decay epsilon
         agent.decay_epsilon()
         
-        #Every 50 episodes, print training progress
+        # Print progress
         if (episode + 1) % 50 == 0:
-            #Print: episode number, reward for this episode, steps taken, current epsilon
-            print(f"Episode {episode + 1}/{episodes} | Reward: {total_reward:7.2f} | Steps: {steps:3d} | Epsilon: {agent.epsilon:.4f}")
+            avg_reward = np.mean(episode_rewards[-50:])
+            avg_steps = np.mean(episode_steps[-50:])
+            print(f"Episode {episode + 1}/{episodes} | Avg Reward: {avg_reward:7.2f} | "
+                  f"Avg Steps: {avg_steps:6.1f} | Epsilon: {agent.epsilon:.4f}")
     
-    #Print completion message
-    print(f"Training complete!")
+    print("=" * 60)
+    print("Training complete!")
     
-    #Return the trained agent and environment
-    return agent, env
+    stats = {
+        'episode_rewards': episode_rewards,
+        'episode_steps': episode_steps,
+        'final_epsilon': agent.epsilon,
+        'total_episodes': episodes
+    }
+    
+    return agent, env, stats
+
 
 #==================== MAIN ====================
 
-#This code only runs if script is executed directly (not imported)
 if __name__ == "__main__":
-    #Import json module (done here too in case needed)
-    import json
+    # Configuration
+    EPISODES = 1000
+    BATCH_SIZE = 32
+    GENERATE_DATA = True  # Set to False to skip A* data generation
+    NUM_A_STAR_SAMPLES = 1000
     
-    #===== Load grid configuration from file =====
-    try:
-        #Try to open grid_data.json
-        with open('grid_data.json', 'r') as f:
-            #Parse JSON file into Python dictionary
-            data = json.load(f)
-            
-            #Extract the grid (2D list)
-            grid = data['grid']
-            
-            #Extract start position and convert to tuple
-            start = tuple(data['start'])
-            
-            #Extract target item number
-            target_item = data['target_item']
-    
-    except FileNotFoundError:
-        #If grid_data.json doesn't exist, create it with example data
-        print("grid_data.json not found!")
-        print("Creating example grid_data.json...")
-        
-        #Create example data structure
-        example_data = {
-            "grid": [
-                [1, 1, 0, 1, 1],  #Row 0: walkable, walkable, wall, walkable, walkable
-                [1, 0, 0, 0, 1],  #Row 1: walkable, wall, wall, wall, walkable
-                [1, 1, 1, 1, 5],  #Row 2: walkable spaces and target item (5)
-                [0, 0, 0, 0, 1],  #Row 3: walls and walkable
-                [1, 1, 1, 1, 1]   #Row 4: all walkable
-            ],
-            "start": [0, 0],  #Agent starts at top-left
-            "target_item": 5  #Looking for item numbered 5
-        }
-        
-        #Write example data to file
-        with open('grid_data.json', 'w') as f:
-            #indent=2 makes the JSON file readable with nice formatting
-            json.dump(example_data, f, indent=2)
-        
-        #Tell user to run again
-        print("Created grid_data.json with example data")
-        print("Please run again to train.")
-        
-        #Exit the program
-        exit()
-    
-    #===== Print training configuration =====
     print("=" * 60)
-    print("DQN PATHFINDING - TRAINING")
+    print("DQN PATHFINDING - UNIFIED TRAINING")
     print("=" * 60)
     
-    #Print grid dimensions
-    print(f"Grid shape: {len(grid)}x{len(grid[0])}")
+    # Setup warehouse grid
+    print("Setting up warehouse grid...")
+    shelf_coords, aisle_coords = get_warehouse_grid()
+    grid = generate_warehouse(63, 13, shelf_coords)
     
-    #Print starting position
-    print(f"Start position: {start}")
+    start_pos = aisle_coords[0] if aisle_coords else (1, 1)
+    target_item = 5
     
-    #Print target item to find
+    print(f"Grid size: 63x13")
+    print(f"Shelves: {len(shelf_coords)}")
+    print(f"Aisles: {len(aisle_coords)}")
+    print(f"Start position: {start_pos}")
     print(f"Target item: {target_item}")
-    
     print("=" * 60)
     
-    #===== Train the agent =====
-    agent, env = train_agent(grid, start, target_item, episodes=500)
+    # Generate A* training data
+    a_star_samples = None
+    if GENERATE_DATA:
+        print("\n--- A* DATA GENERATION PHASE ---")
+        a_star_samples = generate_training_samples(grid, aisle_coords, shelf_coords, NUM_A_STAR_SAMPLES)
+        print(f"Loaded {len(a_star_samples)} A* samples for guidance\n")
     
-    #===== Save the trained model =====
+    # Train DQN agent
+    print("--- DQN TRAINING PHASE ---")
+    agent, env, stats = train_agent_unified(
+        grid,
+        start_pos,
+        target_item,
+        a_star_samples=a_star_samples,
+        episodes=EPISODES,
+        batch_size=BATCH_SIZE
+    )
     
-    #Create 'models' directory if it doesn't exist
+    # Save models
     os.makedirs('models', exist_ok=True)
-    
-    #Save trained network weights
     save_agent(agent, 'models/pathfinder_trained.pth')
+    save_checkpoint(agent, EPISODES, 'models/pathfinder_checkpoint.pth')
     
-    #===== Print completion =====
+    # Save training statistics
+    with open('models/training_stats.json', 'w') as f:
+        json.dump({
+            'episodes': EPISODES,
+            'final_epsilon': stats['final_epsilon'],
+            'avg_final_reward': float(np.mean(stats['episode_rewards'][-50:])),
+            'avg_final_steps': float(np.mean(stats['episode_steps'][-50:])),
+            'a_star_samples_used': NUM_A_STAR_SAMPLES if GENERATE_DATA else 0
+        }, f, indent=2)
+    
     print("=" * 60)
-    print("Training complete! Model saved to models/pathfinder_trained.pth")
+    print("All training complete! Models saved to models/")
     print("=" * 60)
