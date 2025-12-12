@@ -1,5 +1,7 @@
-#dataSetGenerator.py
-#Generates training data using A* search 
+"""
+---dataSetGenerator.py---\n
+Generates training data using A* search algorithm on warehouse grid
+"""
 
 import random 
 import sqlite3
@@ -20,14 +22,20 @@ goal_y:     int,        0-12    end y coord
 path_length:int,                number of nodes - 1
 path_exists:int,        0/1     f/t whether path exists
 '''
-#settting up grid parameters
+# Settting up grid parameters
 Grid_Width = 63
 Grid_Height = 13    
 Train_samples =  500
 Test_samples =  100
 
-#Creates one training data sample   
 def generate_sample(grid, aisles, shelves):
+    """
+    Generates a single data sample using A* search on the warehouse grid.
+    
+    :param grid: List of Lists representing the grid
+    :param aisles: List of tuples representing aisle coordinates
+    :param shelves: List of tuples representing shelf coordinates
+    """
     start = (random.choice(aisles))
     goal = (random.choice(shelves))
     
@@ -50,8 +58,13 @@ def generate_sample(grid, aisles, shelves):
         1       #path exists (true)
     ]
 
-#Generate Dataset
 def generate_dataset(filename, num_samples):
+    """
+    Generates a dataset of samples and saves it to a CSV file.
+    
+    :param filename: Name of the CSV file to save the dataset
+    :param num_samples: Number of samples to generate
+    """
     shelf_coords, path_coords = get_warehouse_grid()
     grid = generate_warehouse(Grid_Width, Grid_Height, shelf_coords)
 

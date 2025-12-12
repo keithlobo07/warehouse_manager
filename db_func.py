@@ -1,3 +1,10 @@
+"""
+---Database Functions Module---\n
+This module provides functions to connect to the SQLite database,
+create necessary tables, reset tables, and initialize the database
+with example data.
+"""
+
 import sqlite3
 from tabulate import tabulate
 
@@ -43,6 +50,8 @@ def reset_tables():
 def create_tables():
     """
     Create the necessary tables in the database if they do not already exist.
+    
+    :Tables:
     1. warehouse\n
     warehouseID - Unique identifier for the warehouse (Primary Key)\n
     name - Name of the warehouse (Default: 'Default name')\n
@@ -148,7 +157,14 @@ def create_tables():
     conn.commit()
   
 '''---Initialise Tables---'''
-def load_grid_from_txt_to_db(filePath, warehouseName): #This function takes a filepath to a warehouse "layout" and inserts a new warehouse into the database.
+def load_grid_from_txt_to_db(filePath, warehouseName):
+    """
+    Load warehouse layout from a text file into the database.
+    
+    :param filePath: Path to the warehouse layout text file
+    :param warehouseName: Name of the warehouse to be stored in the database
+    """
+    #This function takes a filepath to a warehouse "layout" and inserts a new warehouse into the database.
     warehouseFile = open(filePath) #An example of a warehouse layout can be seen in layout.txt, P = path, S = shelf
     xPosition = 0
     yPosition = 0
@@ -683,10 +699,15 @@ def init_database():
     init_stock()
     print("Database initialized with example data.")
 
-'''Table Functions'''
+'''---Table Functions---'''
 def add_supplier(supID, supName, contactName, contactEmail):
     """
     Add a new supplier to the suppliers table.
+    
+    :param supID: Supplier ID (3-digit supplier identifier)
+    :param supName: Supplier Name
+    :param contactName: Contact Name
+    :param contactEmail: Contact Email
     """
     # Error handling
     if not supID or not supName:
@@ -704,6 +725,13 @@ def add_supplier(supID, supName, contactName, contactEmail):
 def add_initial_stock(prodID, x, y, quantity, expiry, warehouseID):
     """
     Add stock entry to the stock table.
+    
+    :param prodID: Product ID
+    :param x: X coordinate of the location
+    :param y: Y coordinate of the location
+    :param quantity: Quantity of the product
+    :param expiry: Expiry date of the product
+    :param warehouseID: Warehouse ID
     """
     # Error handling
     if not prodID:
@@ -737,6 +765,12 @@ def add_initial_stock(prodID, x, y, quantity, expiry, warehouseID):
 def add_product(prodID, prodName, ean, price, supID):
     """
     Add a new product to the products table.
+    
+    :param prodID: Product ID (6-digit unique identifier, XXXYYY format where XXX is supplier ID and YYY is product number)
+    :param prodName: Product Name
+    :param ean: EAN code (13-digit European Article Number)
+    :param price: Price of the product
+    :param supID: Supplier ID (3-digit supplier identifier, must exist in suppliers table)
     """
     # Error handling
     if not prodID:
@@ -797,6 +831,8 @@ def add_product(prodID, prodName, ean, price, supID):
 def remove_supplier(supID):
     """
     Remove a supplier from the suppliers table.
+    
+    :param supID: Supplier ID
     """
     # Error handling
     if not supID:
@@ -831,6 +867,8 @@ def remove_supplier(supID):
 def remove_stockALL(prodID):
     """
     Remove all stock entries for a given product ID.
+    
+    :param prodID: Product ID
     """
     # Error handling
     if not prodID:
@@ -846,6 +884,8 @@ def remove_stockALL(prodID):
 def remove_product(prodID):
     """
     Remove a product from the products table.
+    
+    :param prodID: Product ID
     """
     # Error handling
     if not prodID:
@@ -875,6 +915,9 @@ def remove_product(prodID):
 def remove_stock(itemID, quantity):
     """
     Remove stock from the stock table.
+    
+    :param itemID: Item ID (100%-unique identifier for stock entries, XXXYYYZZZZ format where XXX is supplier ID, YYY is product number, and ZZZZ is location code)
+    :param quantity: Quantity to remove
     """
     # Error handling
     if not itemID:
@@ -908,6 +951,11 @@ def remove_stock(itemID, quantity):
 def add_transaction(prodID, location, quantity, transType):
     """
     Add a transaction to the transactions table.
+    
+    :param prodID: Product ID (6-digit unique identifier))
+    :param location: Location of the product (XXYY format where XX is the x-position and YY is the y-position)
+    :param quantity: Quantity of the product
+    :param transType: Type of the transaction ('in' or 'out')
     """
     # Error handling
     if not prodID:
@@ -935,6 +983,8 @@ def add_transaction(prodID, location, quantity, transType):
 def get_stock(itemID):
     """
     Get stock for a given item ID.
+    
+    :param itemID: Item ID
     """
     # Error handling
     if not itemID:
@@ -956,6 +1006,9 @@ def get_stock(itemID):
 def update_stock(itemID, quantity):
     """
     Update stock quantity for a given item ID.
+    
+    :param itemID: Item ID
+    :param quantity: New quantity
     """
     # Error handling
     if not itemID:
@@ -998,6 +1051,8 @@ def get_Empty_Locations():
 def view_tables(table):
     """
     Utility function to view contents of a table.
+    
+    :param table: Table name
     """
     cursor.execute(f"SELECT * FROM {table};")
     rows = cursor.fetchall()
