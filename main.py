@@ -97,8 +97,28 @@ while True:
                 print("Product ID must be numeric.\n")
                 continue
             view_stock(prodID)
+        case 10:
+            print("-----------------Find item in warehouse-----------------\n")
+            # Call function to find item in warehouse
+            #run inference.py
+            import os
+            os.system("python inference.py")
+            print("Inference complete. Check 'grid_data1.json' for results.\n")
+            #itemID = input("Enter Item ID to find in warehouse: ")
+            #if not itemID.isdigit():
+            #    print("Item ID must be numeric.\n")
+            #    continue
+            #grid, start_pos = set_grid()
+            #path, target_item = a_star_search(grid, start_pos, int(itemID))
+            #if path:
+            #    print(f"Path to item {itemID}: {path}\n")
+            #    grid_to_json(grid, start_pos, int(itemID))
+            #else:
+            #    print(f"Item {itemID} not found in the warehouse.\n")
         case 0:
             print("EXITING\n")
             exit(0)
         case _:
             print("Invalid choice. Please choose again.\n")
+
+db_close(conn)

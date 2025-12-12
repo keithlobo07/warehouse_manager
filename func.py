@@ -24,6 +24,7 @@ def menu():
     print("7. Update stock")
     print("8. Perform stock check")
     print("9. View stock for itemID")
+    print("10. Find item in warehouse")
     
     print("0. Exit\n")
 
