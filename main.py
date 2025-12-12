@@ -52,7 +52,7 @@ while True:
                 continue
             prodName = input("Enter Product Name: ")
             ean = input("Enter EAN: ")
-            price = input("Enter Price: ")
+            price = int(input("Enter Price: "))
             supID = input("Enter Supplier ID: ")
             if not supID.isdigit():
                 print("Supplier ID must be numeric.\n")
