@@ -1,7 +1,5 @@
 # Warehouse Manager
 
-[![Ask DeepWiki](https://devin.ai/assets/askdeepwiki.png)](https://deepwiki.com/keithlobo07/warehouse_manager)
-
 This repository contains a comprehensive Warehouse Management System that combines a traditional database-driven inventory system with an advanced AI-powered pathfinding module for robot navigation. The system uses a SQLite database to manage products, suppliers, and stock levels, and leverages both A* search and a Deep Q-Network (DQN) for optimizing robot movement within a grid-based warehouse layout.
 
 ## Features
