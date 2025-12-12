@@ -1,5 +1,5 @@
 #============================================================================
-# train_unified.py - Complete Training Pipeline (A* + DQN)
+# train.py - Complete Training Pipeline (A* + DQN)
 # Generates training data and trains DQN agent in one script
 # Grid convention: 0=walkable, 1=wall, other=shelf/item
 #============================================================================
@@ -112,17 +112,19 @@ def generate_training_samples(grid, aisles, shelves, num_samples=1000):
         
         path, cost, expansions = a_star_search(grid, start, goal)
         
-        sample = {
-            'start': start,
-            'goal': goal,
-            'path_length': cost if path is not None else -1,
-            'path_exists': 1 if path is not None else 0
-        }
-        samples.append(sample)
-    
-    print(f"Generated {num_samples} training samples!")
-    return samples
+        if use_a_star_sample:
+            a_star_sample = random.choice(a_star_samples)
+    if a_star_sample['path_exists']:
+        episode_start = a_star_sample['start']
+        episode_goal_pos = a_star_sample['goal']
+        
+        # Use the proper method instead of direct assignment
+        env.set_episode_target(episode_start, episode_goal_pos)
 
+    # Reset environment
+state = env.reset()
+
+print(f"Generated {num_samples} training samples!")
 
 #==================== SAVE FUNCTIONS ====================
 
@@ -151,7 +153,7 @@ def save_checkpoint(agent, episode, filepath):
 
 #==================== TRAINING WITH A* GUIDANCE ====================
 
-def train_agent_unified(grid, start, target_item, a_star_samples=None, 
+def train_agent(grid, start, target_item, a_star_samples=None, 
                        episodes=1000, batch_size=32):
     """
     Train DQN agent with optional A* data guidance.
@@ -260,7 +262,7 @@ if __name__ == "__main__":
     NUM_A_STAR_SAMPLES = 1000
     
     print("=" * 60)
-    print("DQN PATHFINDING - UNIFIED TRAINING")
+    print("DQN PATHFINDING")
     print("=" * 60)
     
     # Setup warehouse grid
@@ -287,7 +289,7 @@ if __name__ == "__main__":
     
     # Train DQN agent
     print("--- DQN TRAINING PHASE ---")
-    agent, env, stats = train_agent_unified(
+    agent, env, stats = train_agent(
         grid,
         start_pos,
         target_item,

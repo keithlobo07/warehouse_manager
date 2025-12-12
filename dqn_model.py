@@ -95,6 +95,19 @@ class GridEnvironment:
     - State representation
     """
     
+    def set_episode_target(self, new_start, new_target_pos):
+        """
+    Safely update environment for a new episode with a specific target.
+    
+    Args:
+        new_start: Tuple (row, col) for new starting position
+        new_target_pos: Tuple (row, col) for new target position
+    """
+    self.start = new_start
+    self.agent_pos = np.array(new_start)
+    self.goal_pos = np.array(new_target_pos)
+    self.step_count = 0
+
     def __init__(self, grid, start, target_item):
         """
         Initialize the environment
@@ -117,8 +130,12 @@ class GridEnvironment:
         #The item number we're trying to find
         self.target_item = target_item
         
-        #Find the position of the target item in the grid
+       # Only call _find_target() if target_item is in the grid
+    try:
         self.goal_pos = self._find_target()
+    except ValueError:
+        print(f"Warning: Target item {target_item} not found in grid")
+        self.goal_pos = np.array(start)  # Fallback to start position
         
         #Store grid dimensions (rows, cols)
         self.grid_size = self.grid.shape
