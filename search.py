@@ -1,3 +1,9 @@
+"""
+---search.py---\n
+Implement A* search algorithm for pathfinding in a warehouse grid.
+"""
+
+# Imports
 import time
 import heapq
 
@@ -12,14 +18,23 @@ Function to run A* and return:
 •	running time
 '''
 
-#print("search module loaded")
-
-#manhattan distance heuristic (4 movement grid)
 def manhattan (a, b):
+    """
+    Calculates the Manhattan distance between two points a and b.
+    
+    :param a: Tuple representing the first point (x, y)
+    :param b: Tuple representing the second point (x, y)
+    """
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-#find nearest aisle space to start space
 def nearest_aisle(grid, start, goal):
+    """
+    Finds the nearest aisle space to the goal space with respect to the start space.
+    
+    :param grid: List of Lists representing the grid
+    :param start: Tuple representing the start point (x, y)
+    :param goal: Tuple representing the goal point (x, y)
+    """
     gx,gy = goal
     width = len(grid[0])
 
@@ -40,10 +55,14 @@ def nearest_aisle(grid, start, goal):
     #return aisle with shortest distance to start
     return min(candidates, key=lambda p: manhattan(p, start))
 
-
-
-#implement a* search algorithm
 def a_star_search(grid, start, goal):
+    """
+    Performs the A* search algorithm to find the shortest path from start to goal on the given grid.
+        
+    :param grid: List of Lists representing the grid
+    :param start: Tuple representing the start point (x, y)
+    :param goal: Tuple representing the goal point (x, y)
+    """
     start_time = time.time()
 
     width = len(grid[0])
